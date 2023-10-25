@@ -9,6 +9,11 @@ app.get('/', (req, res) => {
   res.sendFile('views/chart.html', {root: __dirname })
 });
 
-const port = 3000;
-app.listen(port);
-console.log('population listen on port '+ port);
+const port = process.env.PORT || 3000;
+
+// Listen on `port` and 0.0.0.0
+app.listen(port, "0.0.0.0", function () {
+ 
+  console.log('population listen on port '+ port);
+});
+// app.listen(port);
