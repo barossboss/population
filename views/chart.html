@@ -20,18 +20,21 @@
         padding: 10px;
         font-size: 20px;
       }
+      
       .chartCard {
-        width: 100vw;
-        height: calc(100vh - 40px);
-       /* background: rgba(54, 162, 235, 0.2);*/
-       /* display: flex;
-        align-items: center;
-        justify-content: center;*/
+       
+       /* height: calc(100vh - 40px);*/
         display: flex; /* establish flex container */
-    flex-direction: column; /* make main-axis vertical */
-    justify-content: center; /* align items vertically, in this case */
-    align-items: center; /* align items horizontally, in this case */
+        flex-direction: column; /* make main-axis vertical */
+        justify-content: center; /* align items vertically, in this case */
+        align-items: center; /* align items horizontally, in this case */
       }
+      @media (max-width: 575.98px)  {
+        .chartCard {
+          width: 1000px;
+        }
+      }
+     
       .chartBox {
         width: 1000px;
         padding: 20px;
