@@ -9,6 +9,6 @@ app.get('/', (req, res) => {
   res.sendFile('views/chart.html', {root: __dirname })
 });
 
-const port = 80;
+const port = 3000;
 app.listen(port);
 console.log('population listen on port '+ port);
