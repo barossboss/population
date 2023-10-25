@@ -24,10 +24,13 @@
         width: 100vw;
         height: calc(100vh - 40px);
        /* background: rgba(54, 162, 235, 0.2);*/
-        display: flex;
+       /* display: flex;
         align-items: center;
-        justify-content: center;
-        overflow: visible;
+        justify-content: center;*/
+        display: flex; /* establish flex container */
+    flex-direction: column; /* make main-axis vertical */
+    justify-content: center; /* align items vertically, in this case */
+    align-items: center; /* align items horizontally, in this case */
       }
       .chartBox {
         width: 1000px;
@@ -36,24 +39,58 @@
         /*border: solid 3px rgba(54, 162, 235, 1);*/
         background: white;
       }
+      datalist {
+        display: flex;
+        justify-content: space-between;
+        color: rgba(54, 162, 235, 1);
+        width: 100%;
+      }
+
+      input[type="range"] {
+        width: 100%;
+      }
     </style>
   </head>
   <body>
+    <link rel="stylesheet" href="/rSlider.min.css">
     <div class="chartCard">
       <div class="chartBox">
-        <canvas id="myChart"></canvas>
+        <canvas id="myChart" ></canvas>
       </div>
+      <div style="width:800px;margin-left:150px;">
+       <div style="text-align: center;"><label style="font-size: 20px;" id="islider_show"></label></div>
+       <input type="range" id="islider" list="tickmarks" onchange="slider_change()">
+
+      <datalist id="tickmarks">
+       <!--<option value="0" label="0"></option>
+        <option value="10"></option>
+        <option value="20"></option>
+        <option value="30"></option>
+        <option value="40"></option>
+        <option value="50" label="5"></option>
+        <option value="60"></option>
+        <option value="70"></option>
+        <option value="80"></option>
+        <option value="90"></option>
+        <option value="100" label="10"></option>--> 
+      </datalist>
+      </div>
+      
     </div>
+    
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
     <script type="text/javascript" src="/csvjson.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script type="text/javascript" src="/rSlider.min.js"></script>
     <script>
     function getRandomColor() {
         color = "hsl(" + Math.floor(Math.random() * 45)*8 + ", 100%, 75%)";
         return color;
     }
+   
+    
     // setup 
-    console.log('DATA',DATA[0] , DATA.length );
+    // console.log('DATA',DATA[0] , DATA.length );
     //setup data
     let color_map= {};
     let color_set= [];
@@ -107,13 +144,27 @@
             max_year = year;
         }
     });
+
+    let islider = document.getElementById('islider');
+    islider.min =min_year;
+    islider.max =max_year;
+    let tickmarks = document.getElementById('tickmarks');
+    for(y = min_year ; y <= max_year ; y++){
+      var option = document.createElement("option");
+       
+        option.value = y;
+        if(y == min_year || y == max_year || y % 5 == 0){
+          option.label = y;
+        }
+      tickmarks.appendChild(option);
+    }
     // console.log('data_map',data_map);
     const data = {
       labels: [
         // 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
      ],
       datasets: [{
-        label: 'Population growth per country, 1950 to 2021',
+        label: 'Population growth per country, '+min_year+' to '+max_year,
         data: [
             // 18, 12, 6, 9, 12, 3, 9
         ],
@@ -142,6 +193,15 @@
     var i = min_year;
     var tik_count = 0;
     var tik_rate = 4;
+    function slider_change(){
+       i = document.getElementById('islider').value;
+       slider_show();
+       update();
+    }
+    function slider_show(){
+        document.getElementById('islider_show').innerHTML = document.getElementById('islider').value;
+     
+    }
     const floatingLabels = {
       id : 'floatingLabels',
       afterDatasetsDraw(chart , args , options){
@@ -166,17 +226,28 @@
     const config = {
       type: 'bar',
       data,
+    
       options: {
+        responsive:true,
+        // maintainAspectRatio: false,
         indexAxis : 'y',
         scales: {
           x: {
-            beginAtZero: true
+            beginAtZero: true,
+            // max : 1200000000
+            // max: Math.max(...data)  ,
+            // stepValue: 100000000
+            stepSize: 20,
           }
         //   ,xAxes: [{
         //     barPercentage: 0.9
         // }]
         },
-       
+        layout: {
+          padding: {
+                left: 100
+          }
+        },
         plugins: {
           datalabels: {
             anchor : 'end',
@@ -195,16 +266,17 @@
       document.getElementById('myChart'),
       config
     );
+    const slide_values = Object.keys(data_map);
    
         // console.log('test1',test1);
-   
-    setInterval(function update(){
+    function update(){
         // console.log('i='+ i++);
         if(i > max_year){
+           clearInterval(myInterval);
             return;
         }
         if(i == max_year){
-            console.log('color_map',color_map , color_set);
+            // console.log('color_map',color_map , color_set);
         }
         let use_map =data_map[i].slice(0, show_n_element);;
         let populations =  use_map.map((obj) => {
@@ -233,7 +305,11 @@
                 for(k = 0 ;k < data_map[i+1].length ;k++){
                     const next_obj = data_map[i+1][k];
                     if(this_country == next_obj.country){
-                        new_populations.push(Math.floor((next_obj.population - this_population)* tik_mod /tik_rate )+this_population );
+                        var add_value= Math.floor((next_obj.population - this_population) /tik_rate * tik_mod );
+                        new_populations.push(add_value+this_population );
+                        if(j == 0){
+                          // console.log('new_populations[0]', new_populations[0 ], add_value ,this_population );
+                        }
                         break;
                     }
                 }
@@ -241,6 +317,8 @@
             populations = new_populations;
             // console.log('new_populations',i , new_populations);
         }
+        // console.log('tik_count', tik_count,populations[0]);
+        myChart.config.options.scales.x.max =  Math.floor(populations[0] *1.2);
         myChart.config.data.labels =  countrys;
        
         myChart.config.data.datasets[0].data = populations;
@@ -249,14 +327,23 @@
         });
         
         tik_count++
-        if(tik_mod == 0){
+        if(tik_mod == 3){
           i++;
         }
-       
+        // if(i != mySlider.getValue()){
+         
+        //   // document.getElementById('sampleSlider').value = i;
+        //   mySlider.setValues(0,i);
+        //   // console.log(mySlider.getValue(),i)
+        // }
         myChart.update();
-        
-    } , 200);
+        islider.value = i;
+        slider_show();
+       
+       
+    }
+    const myInterval = setInterval( function() {update()} , 150);
+  //  console.log(mySlider);
     </script>
-
   </body>
 </html>
