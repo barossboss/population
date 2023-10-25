@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+      }
+      .chartMenu {
+        width: 100vw;
+        height: 40px;
+        background: #1A1A1A;
+        /*color: rgba(54, 162, 235, 1);*/
+      }
+      .chartMenu p {
+        padding: 10px;
+        font-size: 20px;
+      }
+      .chartCard {
+        width: 100vw;
+        height: calc(100vh - 40px);
+       /* background: rgba(54, 162, 235, 0.2);*/
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: visible;
+      }
+      .chartBox {
+        width: 1000px;
+        padding: 20px;
+        border-radius: 20px;
+        /*border: solid 3px rgba(54, 162, 235, 1);*/
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chartCard">
+      <div class="chartBox">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+    <script type="text/javascript" src="/csvjson.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script>
+    function getRandomColor() {
+        color = "hsl(" + Math.floor(Math.random() * 45)*8 + ", 100%, 75%)";
+        return color;
+    }
+    // setup 
+    console.log('DATA',DATA[0] , DATA.length );
+    //setup data
+    let color_map= {};
+    let color_set= [];
+    let data_map = {};
+    let sum_map = {}
+    for(let i = 0 ; i < DATA.length ;i++){
+        const inner = DATA[i];
+        const year = inner['Year'];
+        const country = inner['Country name'];
+        const population = inner['Population'];
+        if(country.includes('(UN)')){
+            continue;
+        }
+        if(country.includes('(SIDS)')){
+            continue;
+        }
+        if(country.includes('excluding')){
+            continue;
+        }
+        if(country.includes('countries')){
+            continue;
+        }
+        if(country.includes('regions')){
+            continue;
+        }
+        if(country.includes('World')){
+            sum_map[year] = population;
+            continue;
+        }
+        
+        
+        if( !(year in data_map)){
+            data_map[year] = [];
+        }
+        data_map[year].push({'country': country , 'population' :population});
+        
+    }
+    // console.log('color_map',color_map);
+    show_n_element = 12;
+    min_year = 9999;
+    max_year = 0;
+    Object.keys(data_map).forEach(year => {
+        // console.log(key, obj[key]);
+        let arr = data_map[year];
+        arr.sort(function(a, b){return b.population - a.population});
+        data_map[year] = arr; //.slice(0, show_n_element);
+        if(year < min_year){
+            min_year = year;
+        }
+        if(year > max_year){
+            max_year = year;
+        }
+    });
+    // console.log('data_map',data_map);
+    const data = {
+      labels: [
+        // 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+     ],
+      datasets: [{
+        label: 'Population growth per country, 1950 to 2021',
+        data: [
+            // 18, 12, 6, 9, 12, 3, 9
+        ],
+        backgroundColor: [
+        //   'rgba(255, 26, 104, 0.2)',
+        //   'rgba(54, 162, 235, 0.2)',
+        //   'rgba(255, 206, 86, 0.2)',
+        //   'rgba(75, 192, 192, 0.2)',
+        //   'rgba(153, 102, 255, 0.2)',
+        //   'rgba(255, 159, 64, 0.2)',
+        //   'rgba(0, 0, 0, 0.2)'
+        // getRandomColor(),getRandomColor(),getRandomColor(),getRandomColor(),getRandomColor(),getRandomColor(),getRandomColor()
+        ],
+        // borderColor: [
+        //   'rgba(255, 26, 104, 1)',
+        //   'rgba(54, 162, 235, 1)',
+        //   'rgba(255, 206, 86, 1)',
+        //   'rgba(75, 192, 192, 1)',
+        //   'rgba(153, 102, 255, 1)',
+        //   'rgba(255, 159, 64, 1)',
+        //   'rgba(0, 0, 0, 1)'
+        // ],
+        borderWidth: 1
+      }]
+    };
+    var i = min_year;
+    var tik_count = 0;
+    var tik_rate = 4;
+    const floatingLabels = {
+      id : 'floatingLabels',
+      afterDatasetsDraw(chart , args , options){
+        // console.log('chart' ,chart);
+        const { ctx ,chartArea : {top} } =chart;
+        ctx.save();
+        ctx.font = 'bolder 50px Arial';
+        var show_year = i > max_year ? max_year : i;
+        ctx.fillText( show_year , 800, 400);
+        ctx.save();
+        ctx.font = 'normal 30px Arial';
+        var show_value = sum_map[show_year];
+        var mod = tik_count % tik_rate;
+        if(mod != 0 && (i+1 in sum_map)){
+          show_value =  Math.floor((sum_map[i+1] - sum_map[i]) * mod / tik_rate) + show_value;
+        }
+        ctx.fillText( 'Total: '+ show_value.toLocaleString('en') , 635, 450);
+      }
+    }
+
+    // config 
+    const config = {
+      type: 'bar',
+      data,
+      options: {
+        indexAxis : 'y',
+        scales: {
+          x: {
+            beginAtZero: true
+          }
+        //   ,xAxes: [{
+        //     barPercentage: 0.9
+        // }]
+        },
+       
+        plugins: {
+          datalabels: {
+            anchor : 'end',
+            align : 'end',
+            formatter: function(value, context) {
+              return value.toLocaleString('en');
+            }
+          }
+        }
+      },
+      plugins: [ChartDataLabels , floatingLabels]
+    };
+
+    // render init block
+    const myChart = new Chart(
+      document.getElementById('myChart'),
+      config
+    );
+   
+        // console.log('test1',test1);
+   
+    setInterval(function update(){
+        // console.log('i='+ i++);
+        if(i > max_year){
+            return;
+        }
+        if(i == max_year){
+            console.log('color_map',color_map , color_set);
+        }
+        let use_map =data_map[i].slice(0, show_n_element);;
+        let populations =  use_map.map((obj) => {
+        return obj.population;
+        });
+        let countrys =  use_map.map((obj) => {
+        return obj.country;
+        });
+        countrys.forEach( country => {
+            if( !(country in color_map)){
+            let new_color = getRandomColor();
+            while(color_set.includes(new_color)){
+                new_color = getRandomColor();
+            };
+            color_map[country] = new_color;
+            color_set.push(new_color);
+            }
+        })
+        var tik_mod = tik_count % tik_rate;
+        if(tik_mod != 0 && (i+1 in data_map)){
+            
+            let new_populations = [];
+            for(j = 0 ;j < populations.length ;j++){
+                const this_population = populations[j];
+                const this_country = countrys[j];
+                for(k = 0 ;k < data_map[i+1].length ;k++){
+                    const next_obj = data_map[i+1][k];
+                    if(this_country == next_obj.country){
+                        new_populations.push(Math.floor((next_obj.population - this_population)* tik_mod /tik_rate )+this_population );
+                        break;
+                    }
+                }
+            }
+            populations = new_populations;
+            // console.log('new_populations',i , new_populations);
+        }
+        myChart.config.data.labels =  countrys;
+       
+        myChart.config.data.datasets[0].data = populations;
+        myChart.config.data.datasets[0].backgroundColor = use_map.map((obj) => {
+        return color_map[obj.country];
+        });
+        
+        tik_count++
+        if(tik_mod == 0){
+          i++;
+        }
+       
+        myChart.update();
+        
+    } , 200);
+    </script>
+
+  </body>
+</html>
